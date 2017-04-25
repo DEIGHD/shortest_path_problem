@@ -7,7 +7,7 @@
 template<typename TYPE>
 d8::graph_path<TYPE> d8::graph<TYPE>::breadth_firts_search(size_t start_vertex, size_t goal_vertex) const
 {
-	size_t vertices_count = m_weight_matrix.get_row_count();
+	size_t vertices_count = m_vertices.size();
 	std::vector<size_t> prev(vertices_count, SIZE_MAX);
 
 	std::queue<size_t> queue;
@@ -22,12 +22,12 @@ d8::graph_path<TYPE> d8::graph<TYPE>::breadth_firts_search(size_t start_vertex, 
 	{
 		current_vertex = queue.front();
 		queue.pop();
-		for (size_t i = 0; i < vertices_count; i++)
+		for (auto & adjacent_vertex : m_vertices[current_vertex].adjacent_vertices)
 		{
-			if (prev[i] == SIZE_MAX && m_weight_matrix(current_vertex, i) != 0 && m_weight_matrix(current_vertex, i) != m_infinity)
+			if (prev[adjacent_vertex] == SIZE_MAX)
 			{
-				prev[i] = current_vertex;
-				queue.push(i);
+				prev[adjacent_vertex] = current_vertex;
+				queue.push(adjacent_vertex);
 			}
 		}
 	}
@@ -71,3 +71,34 @@ d8::graph_path<TYPE> d8::graph<TYPE>::get_short_path(size_t start_vertex, size_t
 
 	return path;
 }
+
+template<typename TYPE>
+void d8::graph<TYPE>::from_weight_matrix(const d8::matrix<TYPE> & weight_matrix)
+{
+	size_t row_count = weight_matrix.get_row_count();
+	size_t column_count = weight_matrix.get_column_count();
+
+	m_vertices.resize(row_count);
+	m_edges.clear();
+
+	edge<TYPE> current_edge;
+
+	for (size_t row = 0; row < row_count; row++)
+	{
+		for (size_t col = 0; col < column_count; col++)
+		{
+			if (weight_matrix(row, col) != 0 && weight_matrix(row, col) != m_infinity)
+			{
+				m_vertices[row].adjacent_vertices.push_back(col);
+
+				current_edge.first_vertex = row;
+				current_edge.second_vertex = col;
+				current_edge.weight = weight_matrix(row, col);
+
+				m_edges.push_back(current_edge);
+			}
+
+		}
+	}
+}
+

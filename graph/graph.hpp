@@ -1,6 +1,10 @@
 #pragma once
 #include "..\matrix\matrix.hpp"
 #include "graph_path.hpp"
+#include <list>
+#include <string>
+#include <memory>
+#include <functional>
 
 namespace d8
 {
@@ -14,10 +18,30 @@ namespace d8
 	class graph
 	{
 	private:
-		d8::matrix<TYPE> m_weight_matrix;
+		template<typename TYPE>
+		class vertex
+		{
+		public:
+			std::list< size_t > adjacent_vertices;
+			std::string name = "";
+		};
+		template<typename TYPE>
+		class edge
+		{
+		public:
+			size_t first_vertex;
+			size_t second_vertex;
+			TYPE weight;
+			bool has_direction = false;
+		};
+
+		std::vector< vertex<TYPE> > m_vertices;
+		std::vector< edge<TYPE> > m_edges;
 		TYPE m_infinity;
 
-		graph_path<TYPE> breadth_firts_search(size_t start_vertex, size_t goal_vertex) const;
+
+
+		d8::graph_path<TYPE> breadth_firts_search(size_t start_vertex, size_t goal_vertex) const;
 	public:
 		using value_type = TYPE;
 
@@ -28,8 +52,7 @@ namespace d8
 
 		graph(const size_t vertices_count) noexcept
 		{
-			m_weight_matrix.resize(vertices_count, vertices_count);
-			m_weight_matrix.set(0);
+			m_vertices.resize(vertices_count);
 			set_infinity_default();
 		}
 
@@ -55,49 +78,16 @@ namespace d8
 			return m_infinity;
 		}
 
-		inline std::vector<size_t> get_adjacent_vertices(size_t vertex) const
+		inline std::list<size_t> get_adjacent_vertices(size_t vertex) const
 		{
-			size_t adjacent_vertex;
-			size_t vertices_count = m_weight_matrix.get_column_count();
-			std::vector<size_t> adjacent_vertices;
-
-			for (adjacent_vertex = 0; adjacent_vertex < vertices_count; adjacent_vertex++)
-			{
-				if (m_weight_matrix(vertex, adjacent_vertex) != 0 && m_weight_matrix(vertex, adjacent_vertex) != m_infinity)
-				{
-					adjacent_vertices.push_back(adjacent_vertex);
-				}
-			}
-
-			return adjacent_vertices;
+			return m_vertices[vertex].adjacent_vertices;
 		}
 
-		inline void from_weight_matrix(const matrix<TYPE> & weight_matrix)
-		{
-			m_weight_matrix = weight_matrix;
-		}
+		void from_weight_matrix(const matrix<TYPE> & weight_matrix);
 
 		inline void from_adjacency_matrix(const matrix<TYPE> & adjacency_matrix)
 		{
-			size_t row_count = m_weight_matrix.get_row_count();
-			size_t column_count = m_weight_matrix.get_column_count();
-
-			m_weight_matrix.resize(row_count, column_count);
-
-			for (size_t row = 0; row < row_count; row++)
-			{
-				for (size_t col = 0; col < column_count; col++)
-				{
-					if (row != col && adjacency_matrix(row, col) == 0)
-					{
-						m_weight_matrix(row, col) = m_infinity;
-					}
-					else
-					{
-						m_weight_matrix(row, col) = adjacency_matrix(row, col);
-					}
-				}
-			}
+			from_weight_matrix(adjacency_matrix);
 		}
 		
 		graph_path<TYPE> get_short_path(size_t start_vertex, size_t goal_vertex, pfa algorithm) const;
